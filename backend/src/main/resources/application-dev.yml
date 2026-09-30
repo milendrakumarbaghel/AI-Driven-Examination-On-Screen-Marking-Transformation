@@ -1,0 +1,30 @@
+spring:
+  application:
+    name: ai-examination-backend
+  datasource:
+    url: jdbc:postgresql://ep-long-darkness-axpis0uo.c-4.us-east-2.aws.neon.tech/neondb?sslmode=require&channel_binding=require
+    username: neondb_owner
+    password: npg_l8rZXPbxiN0I
+    driver-class-name: org.postgresql.Driver
+  jpa:
+    hibernate:
+      ddl-auto: update
+    show-sql: false
+    open-in-view: false
+  servlet:
+    multipart:
+      max-file-size: 25MB
+      max-request-size: 30MB
+
+app:
+  upload:
+    dir: uploads/answer-sheets
+  jwt:
+    secret: 404E635266556A586E3272357538782F413F4428472B4B6250645367566B5970
+    expiration-ms: 86400000
+  ai-service:
+    url: http://localhost:8000
+    mock-fallback: true
+  moderation:
+    variance-threshold: 3.0
+    confidence-threshold: 0.70
