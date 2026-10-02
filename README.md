@@ -1,4 +1,5 @@
-# AI-Driven Examination & On-Screen Marking Transformation
+# 🎓 AI-Driven Examination & On-Screen Marking Transformation
+### Project Name: **E-Valuate AI**
 
 > **Built for MPOnline Idea & Innovation Hackathon 2026**  
 > **Core Principle:** *AI Assists. Examiner Decides.*  
@@ -6,9 +7,19 @@
 
 ---
 
+## 📚 Module Documentation Links
+
+For deep dives into individual sub-systems, setup instructions, and architecture:
+- 🖥️ **Frontend Web Application (React 19 + Vite + TailwindCSS)** &rarr; [`frontend/README.md`](frontend/README.md)
+- ☕ **Backend REST API Engine (Spring Boot 3/4 + Java + PostgreSQL)** &rarr; [`backend/README.md`](backend/README.md)
+- 🧠 **AI & OCR Microservice (FastAPI + OpenCV + Tesseract + LLMs)** &rarr; [`ai-service/README.md`](ai-service/README.md)
+- 📄 **Sample Test Answer Sheets (PDFs & Scanned Images)** &rarr; [`sample-data/README.md`](sample-data/README.md)
+
+---
+
 ## 🏛️ Executive Summary
 
-University examinations have traditionally relied on manual, physical answer sheet distribution, resulting in slow turnaround times, evaluation fatigue, and inconsistent marking across examiners.
+University examinations have traditionally relied on manual, physical answer sheet distribution, resulting in slow turnaround times, evaluation fatigue, high administrative costs, and inconsistent marking across examiners.
 
 **E-Valuate AI** transforms this paradigm by introducing:
 1. **Document Digitization & OCR**: Intelligent OpenCV preprocessing (grayscale, bilateral denoising, Otsu binarization, deskewing) and OCR extraction with question-wise segmentation.
@@ -16,18 +27,88 @@ University examinations have traditionally relied on manual, physical answer she
 3. **Explainable AI (XAI)**: Explicitly surfaces **Matched Concepts** (✓) and **Missing Concepts** (✗) alongside concise pedagogical explanations and confidence indicators.
 4. **On-Screen Marking (OSM) Workspace**: Split-screen workbench pairing the original document viewer with real-time AI suggestions, allowing examiners to accept, tweak, or override marks with a single click.
 5. **Quality Control & Moderation**: Automated detection of unanswered/empty questions, low-confidence OCR/AI evaluations, and large AI-vs-Examiner mark discrepancies (&ge; 3.0 marks).
+6. **Executive Analytics**: Real-time Recharts dashboards tracking evaluation throughput, question averages, and difficulty indices.
 
 ---
 
-## 🛠️ Technology Stack
+## 🏗️ System Architecture & Workflow
+
+```text
+ ┌────────────────────────────────────────────────────────────────────────┐
+ │                      React 19 + Vite Frontend                          │
+ │  - Split-screen On-Screen Marking UI (PDF/Image Zoom + Rubric Panel)   │
+ │  - Admin, Examiner, and Moderator Role-Guarded Dashboards               │
+ │  - Recharts Visual Analytics & Certified Result Marksheet Export       │
+ └───────────────────────────────────┬────────────────────────────────────┘
+                                     │ HTTP (REST + JWT Bearer)
+                                     ▼
+ ┌────────────────────────────────────────────────────────────────────────┐
+ │                  Spring Boot 3/4 Backend Core (Java)                   │
+ │  - Spring Security 7 + HMAC-SHA512 JWT Authentication                  │
+ │  - Business Logic & Mark Override Bounds Enforcement (0 <= M <= Max)   │
+ │  - Quality Control Moderation Engine (<70% conf, >=3.0 mark variance)  │
+ │  - Spring Data JPA / Hibernate Persistence                             │
+ └─────────────────┬─────────────────────────────────┬────────────────────┘
+                   │                                 │
+                   ▼ (Multipart & JSON REST)         ▼ (JPA / JDBC)
+ ┌───────────────────────────────────┐    ┌───────────────────────────────┐
+ │    FastAPI AI & OCR Microservice  │    │      PostgreSQL Database      │
+ │  - OpenCV Preprocessing (Deskew)  │    │  - Cloud NeonDB Configured    │
+ │  - PyTesseract / PyPDF OCR        │    │  - Users, Exams, Questions,   │
+ │  - Q1..Qn Regex Segmentation      │    │    Rubrics, Answer Sheets,    │
+ │  - LLM Evaluation (Gemini/OpenAI) │    │    Evaluations, Mod Flags     │
+ │  - Offline Deterministic Mock     │    └───────────────────────────────┘
+ └─────────────────┬─────────────────┘
+                   │
+                   ▼ HTTPS (REST)
+ ┌───────────────────────────────────┐
+ │   LLM Providers (Cloud / Mock)    │
+ │  - Google Gemini (gemini-2.5-flash)
+ │  - OpenAI (gpt-4o-mini)           │
+ │  - Deterministic Mock Provider    │
+ └───────────────────────────────────┘
+```
+
+### End-to-End Data Flow:
+```text
+Examiner uploads scan (PDF/Image)
+       │
+       ▼
+Spring Boot saves file to local disk (`uploads/answer-sheets/{examId}/`)
+       │
+       ▼
+Spring Boot triggers AI service (`POST /ai/ocr`)
+       │
+       ▼
+FastAPI preprocesses image, extracts text, and segments into questions (Q1..Qn)
+       │
+       ▼
+Spring Boot triggers evaluation (`POST /ai/evaluate`) with Question, Model Answer & Rubric
+       │
+       ▼
+LLM evaluates answer & returns: Suggested Marks, Confidence, Matched/Missing Concepts, Explanation
+       │
+       ▼
+Examiner reviews on split-screen UI: Accepts mark OR inputs custom mark override
+       │
+       ▼
+Spring Boot saves final examiner mark & checks moderation rules (flags if variance >= 3.0)
+       │
+       ▼
+Examiner finalizes sheet -> Generates certified marksheet certificate -> Admin views analytics
+```
+
+---
+
+## 🛠️ Technology Stack Summary
 
 | Layer | Technologies |
 | :--- | :--- |
 | **Frontend** | React 19, Vite, TailwindCSS v4, React Router 7, Axios, Lucide Icons, Recharts |
-| **Backend** | Java 25 / 21, Spring Boot 3 / 4, Spring Security, JWT (HMAC-SHA512), Spring Data JPA, Hibernate, Jakarta Validation, Maven Wrapper |
-| **AI Service** | Python 3.12, FastAPI, OpenCV, PyTesseract, PyPDF, Pydantic v2, Uvicorn, Google Gemini / OpenAI REST abstractions |
-| **Database** | PostgreSQL (Cloud-hosted NeonDB configured by default; H2 fallback supported) |
-| **File Storage** | Clean local filesystem storage (`uploads/answer-sheets/{examId}/`) with path traversal guards |
+| **Backend** | Java 21 / 25, Spring Boot 3.x / 4.x, Spring Security, JWT (HMAC-SHA512), Spring Data JPA, Hibernate, Jakarta Validation, Maven Wrapper |
+| **AI Service** | Python 3.10 - 3.12, FastAPI, OpenCV, PyTesseract, PyPDF, Pydantic v2, Uvicorn, Google Gemini / OpenAI REST abstractions |
+| **Database** | PostgreSQL (Pre-connected cloud NeonDB; in-memory H2 profile supported) |
+| **Storage** | Local disk file-system storage (`uploads/answer-sheets/{examId}/`) with path traversal guards |
 
 ---
 
@@ -41,66 +122,70 @@ The platform includes seed data with pre-configured accounts:
 | **EXAMINER** | `examiner@example.com` | `examiner123` | Answer sheet upload, split-screen on-screen marking, mark approval & override |
 | **MODERATOR** | `moderator@example.com` | `moderator123` | Inspect low-confidence evaluations, mark variance alerts, formal sign-off |
 
-> **Tip:** The Login page includes **1-Click Demo Buttons** (`[Admin]`, `[Examiner]`, `[Moderator]`) for fast, zero-typing hackathon presentations!
+> **Presentation Tip:** The Login page includes **1-Click Demo Buttons** (`[Admin]`, `[Examiner]`, `[Moderator]`) for fast, zero-typing hackathon presentations!
 
 ---
 
 ## 🚀 Quick Start / How to Run Locally
 
-### 1. Prerequisites
+You will need **3 terminal windows** open simultaneously (one for each service).
+
+### Prerequisites Check
 - **Java**: JDK 21 or later (`java -version`)
-- **Node.js**: v20 or later (`node -v`, `npm -v`)
-- **Python**: 3.10 to 3.12 (`python3 --version`)
-- **Tesseract OCR** (optional, fallback OCR active):
+- **Node.js**: v18 or later (`node -v`, `npm -v`)
+- **Python**: 3.10 to 3.12 (`python3 --version` or `py --version`)
+- **Tesseract OCR** (for physical image OCR):
   - macOS: `brew install tesseract`
-  - Ubuntu/Debian: `sudo apt-get install tesseract-ocr`
-  - Windows: [UB-Mannheim Tesseract installer](https://github.com/UB-Mannheim/tesseract/wiki)
+  - Linux: `sudo apt install tesseract-ocr`
+  - Windows: [UB-Mannheim installer](https://github.com/UB-Mannheim/tesseract/wiki)
 
 ---
 
-### 2. Run the AI Service (Python FastAPI)
+### Terminal 1: Run AI Service (Port 8000)
 
 ```bash
 cd ai-service
 
-# Create virtual environment
-python3 -m venv venv
-
-# Activate virtual environment
+# Setup virtual environment
 # macOS / Linux:
+python3 -m venv venv
 source venv/bin/activate
-# Windows:
-# venv\Scripts\activate
+
+# Windows (Command Prompt):
+# python -m venv venv
+# venv\Scripts\activate.bat
 
 # Install dependencies
+pip install --upgrade pip
 pip install -r requirements.txt
 
 # Start FastAPI server
 uvicorn app.main:app --reload --port 8000
 ```
-- API Docs: `http://localhost:8000/docs`
-- Health Check: `http://localhost:8000/ai/health`
+- API Health Check: `http://localhost:8000/ai/health`
+- Interactive OpenAPI Docs: `http://localhost:8000/docs`
 
 ---
 
-### 3. Run the Backend Service (Spring Boot)
+### Terminal 2: Run Backend Service (Port 8080)
 
 ```bash
 cd backend
 
-# Run with Maven Wrapper (all dependencies download automatically)
 # macOS / Linux:
+chmod +x mvnw
 ./mvnw spring-boot:run
-# Windows:
+
+# Windows (Command Prompt):
 # mvnw.cmd spring-boot:run
 ```
 - Server runs on: `http://localhost:8080`
 - Database: Pre-connected to cloud NeonDB PostgreSQL.
-- Seeding: Automatically seeds demo users, the *CS301 Java Programming* examination with 5 questions & rubrics, and candidate answer sheets on first run.
+- Seeding: Automatically seeds demo users, the *CS301 Java Programming* exam with 5 questions & rubrics, and candidate answer sheets on initial run.
 
 ---
 
-### 4. Run the Frontend (React + Vite)
+### Terminal 3: Run Frontend Web App (Port 5173)
 
 ```bash
 cd frontend
@@ -108,10 +193,42 @@ cd frontend
 # Install packages
 npm install
 
-# Start Vite development server
+# Start Vite dev server
 npm run dev
 ```
-- Open in Browser: `http://localhost:5173`
+- Open in Browser: **`http://localhost:5173`**
+
+---
+
+## 🔑 Multi-OS Terminal Cheat Sheet
+
+| Action | macOS / Linux | Windows (CMD / PowerShell) |
+| :--- | :--- | :--- |
+| **AI venv activate** | `source venv/bin/activate` | `venv\Scripts\activate.bat` or `.\venv\Scripts\Activate.ps1` |
+| **AI run** | `uvicorn app.main:app --reload --port 8000` | `uvicorn app.main:app --reload --port 8000` |
+| **Backend run** | `./mvnw spring-boot:run` | `mvnw.cmd spring-boot:run` |
+| **Frontend run** | `npm run dev` | `npm run dev` |
+| **Kill port 8080** | `lsof -ti :8080 \| xargs kill -9` | `netstat -ano \| findstr :8080` &rarr; `taskkill /PID <PID> /F` |
+| **Kill port 8000** | `lsof -ti :8000 \| xargs kill -9` | `netstat -ano \| findstr :8000` &rarr; `taskkill /PID <PID> /F` |
+| **Kill port 5173** | `lsof -ti :5173 \| xargs kill -9` | `netstat -ano \| findstr :5173` &rarr; `taskkill /PID <PID> /F` |
+
+---
+
+## 🤖 Configuring API Keys (Gemini & OpenAI)
+
+Open [`ai-service/.env`](ai-service/.env):
+
+```env
+# Free Google Gemini API Key from https://aistudio.google.com/
+GEMINI_API_KEY=AIzaSyYourGeminiApiKeyHere
+OPENAI_API_KEY=
+AI_PROVIDER=GEMINI
+AI_MOCK_MODE=false
+PORT=8000
+```
+
+> **Hackathon Presentation Safety:**  
+> If demonstrating without internet access or during API maintenance, toggle `AI_MOCK_MODE=true` in `ai-service/.env`. The AI service will use its built-in deterministic rubric evaluator, ensuring 100% presentation uptime and zero lag during your presentation.
 
 ---
 
@@ -144,7 +261,7 @@ npm run dev
 - **Path Traversal Protection**: Uploaded file names sanitized with UUID prefixes and directory traversal detection.
 - **Server-Side Range Validation**: Examiner marks strictly bounded by `0 <= mark <= question.maxMarks`.
 - **Role-Based Authorization**: Endpoints guarded via Spring Security `@PreAuthorize("hasRole(...)")`.
-- **No Secret Leakage**: Zero API keys hardcoded in frontend source code.
+- **Zero Secret Leakage**: Zero API keys hardcoded in frontend source code.
 
 ---
 
@@ -153,3 +270,4 @@ npm run dev
 1. **Pedagogical Alignment, Not Just Keyword Matching**: AI evaluates semantic understanding and rubric criteria, allowing students who phrase concepts accurately in their own words to receive fair marks.
 2. **Explainable AI (XAI)**: Eliminates the "black box" of automated grading. Examiners instantly see *why* a score was suggested through matched concepts, missing items, and rationale.
 3. **Fail-Safe Resilience**: If OCR encounters unusual handwriting or the external LLM is offline, examiners can directly edit extracted text and assign marks manually without any system deadlock.
+4. **Complete Human Examiner Sovereignty**: AI only assists—the human examiner always decides the legal, finalized university mark.
